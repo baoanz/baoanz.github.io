@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảo Ân</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Video nền */
+        #background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            display: block;
+        }
+
+        /* Fallback hình ảnh nếu video không load */
+        #background-fallback {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2;
+            display: none;
+        }
+
+        /* Lớp phủ mờ trên video */
+        .video-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+
+        .popup {
+            background: rgba(40, 44, 52, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(114, 137, 218, 0.2);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .popup:hover {
+            transform: scale(1.02);
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #7289da;
+            box-shadow: 0 0 15px rgba(114, 137, 218, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .avatar:hover {
+            transform: rotate(5deg) scale(1.1);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .username {
+            font-size: 24px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(114, 137, 218, 0.5);
+        }
+
+        .username::after {
+            content: "✅";
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .description {
+            font-size: 16px;
+            color: #b9bbbe;
+            margin: 5px 0;
+            font-style: italic;
+        }
+
+        .joined {
+            font-size: 13px;
+            color: #72767d;
+            margin: 0;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 25px;
+        }
+
+        .mic-button {
+            background: linear-gradient(45deg, #7289da, #5b6eae);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(114, 137, 218, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .mic-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(114, 137, 218, 0.6);
+        }
+
+        .music-dropdown {
+            display: none;
+            position: absolute;
+            background: rgba(40, 44, 52, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(114, 137, 218, 0.2);
+            z-index: 1000;
+        }
+
+        .music-dropdown select {
+            width: 250px;
+            max-width: 100%;
+            padding: 8px;
+            background: #2c2f33;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .music-dropdown select option {
+            background: #2c2f33;
+            color: #fff;
+        }
+
+        .music-player {
+            background: linear-gradient(90deg, rgba(44, 47, 51, 0.9), rgba(64, 68, 75, 0.9));
+            border-radius: 12px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            opacity: 0.9;
+            z-index: 10;
+            width: 100%;
+            max-width: 500px;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .music-player:hover {
+            opacity: 1;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.7);
+        }
+
+        .song-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .song-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            background: linear-gradient(45deg, #5865f2, #7289da);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 16px;
+            transition: transform 0.2s ease;
+        }
+
+        .song-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .song-details {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .song-title {
+            font-size: 14px;
+            margin: 0;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100px;
+            transition: color 0.3s ease;
+        }
+
+        .song-title:hover {
+            color: #7289da;
+        }
+
+        .song-time {
+            font-size: 12px;
+            color: #b9bbbe;
+            margin: 0;
+            white-space: nowrap;
+            min-width: 50px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 150px;
+            height: 4px;
+            background: #40444b;
+            border-radius: 10px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .progress-bar:hover {
+            height: 6px;
+            background: #2c2f33;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #5865f2, #7289da);
+            border-radius: 10px;
+            width: 0%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: width 0.1s linear;
+        }
+
+        .progress-thumb {
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: -3px;
+            right: 0;
+            transform: translateX(50%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .progress-bar:hover .progress-thumb {
+            opacity: 1;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 80px;
+        }
+
+        .control-button {
+            background: none;
+            border: none;
+            color: #5865f2;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-button:hover {
+            color: #7289da;
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        /* Chatbox Styles */
+        .chatbox {
+            display: none;
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            bottom: 80px;
+            width: 300px;
+            background: rgba(40, 44, 52, 0.3);
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(114, 137, 218, 0.2);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chatbox-header {
+            background: #5865f2;
+            padding: 10px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .chatbox-header .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 10px;
+            transition: color 0.3s ease;
+        }
+
+        .chatbox-header .close-btn:hover {
+            color: #ff5555;
+        }
+
+        .chatbox-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            background: #2c2f33;
+            padding: 8px 12px;
+            border-radius: 5px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.self {
+            background: #5865f2;
+            align-self: flex-end;
+        }
+
+        .chatbox-input {
+            display: flex;
+            padding: 10px;
+            background: #2c2f33;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .chatbox-input input {
+            flex: 1;
+            padding: 8px;
+            background: #40444b;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .chatbox-input button {
+            margin-left: 10px;
+            padding: 8px 15px;
+            background: #5865f2;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .chatbox-input button:hover {
+            background: #4752c4;
+        }
+
+        /* Social Links Styles */
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            width: 400px;
+            max-width: 90%;
+            z-index: 1;
+        }
+
+        .social-button {
+            background: rgba(40, 44, 52, 0.95);
+            border-radius: 8px;
+            padding: 10px;
+            width: 100px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Bóng mờ nhẹ thay viền */
+            backdrop-filter: blur(8px);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .social-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .social-button.facebook {
+            background: linear-gradient(45deg, #3b5998, #4c70ba);
+        }
+
+        .social-button.tiktok {
+            background: linear-gradient(45deg, #000000, #25F4EE);
+        }
+
+        .social-button.instagram {
+            background: linear-gradient(45deg, #e1306c, #f77737);
+        }
+
+        .social-button img {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Media Queries cho Mobile */
+        @media (max-width: 768px) {
+            body {
+                justify-content: flex-start;
+                padding: 20px;
+            }
+
+            .popup {
+                width: 100%;
+                max-width: 350px;
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .avatar {
+                width: 60px;
+                height: 60px;
+            }
+
+            .username {
+                font-size: 20px;
+            }
+
+            .description {
+                font-size: 14px;
+            }
+
+            .joined {
+                font-size: 12px;
+            }
+
+            .mic-button {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+
+            .music-player {
+                width: 100%;
+                max-width: 400px;
+                padding: 10px 15px;
+                bottom: 10px;
+            }
+
+            .song-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+
+            .song-title {
+                font-size: 12px;
+                max-width: 80px;
+            }
+
+            .song-time {
+                font-size: 10px;
+            }
+
+            .progress-bar {
+                max-width: 120px;
+                height: 4px;
+            }
+
+            .progress-bar:hover {
+                height: 5px;
+            }
+
+            .progress-thumb {
+                width: 8px;
+                height: 8px;
+            }
+
+            .control-button {
+                font-size: 16px;
+                padding: 4px;
+            }
+
+            .music-dropdown select {
+                width: 200px;
+            }
+
+            .chatbox {
+                width: 250px;
+                right: 10px;
+                top: 10px;
+                bottom: 70px;
+            }
+
+            .social-links {
+                width: 100%;
+                max-width: 350px;
+                gap: 10px;
+            }
+
+            .social-button {
+                width: 80px;
+                height: 35px;
+            }
+
+            .social-button img {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .popup {
+                max-width: 300px;
+                padding: 10px;
+            }
+
+            .avatar {
+                width: 50px;
+                height: 50px;
+            }
+
+            .username {
+                font-size: 18px;
+            }
+
+            .description {
+                font-size: 12px;
+            }
+
+            .joined {
+                font-size: 10px;
+            }
+
+            .mic-button {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+
+            .music-player {
+                max-width: 350px;
+                padding: 8px 10px;
+                bottom: 5px;
+            }
+
+            .song-icon {
+                width: 25px;
+                height: 25px;
+                font-size: 12px;
+            }
+
+            .song-title {
+                font-size: 10px;
+                max-width: 60px;
+            }
+
+            .song-time {
+                font-size: 9px;
+                min-width: 40px;
+            }
+
+            .progress-bar {
+                max-width: 100px;
+                height: 3px;
+            }
+
+            .progress-bar:hover {
+                height: 4px;
+            }
+
+            .progress-thumb {
+                width: 6px;
+                height: 6px;
+            }
+
+            .control-button {
+                font-size: 14px;
+                padding: 3px;
+            }
+
+            .music-dropdown select {
+                width: 180px;
+            }
+
+            .chatbox {
+                width: 200px;
+                right: 5px;
+                top: 5px;
+                bottom: 60px;
+            }
+
+            .social-links {
+                max-width: 300px;
+                gap: 8px;
+            }
+
+            .social-button {
+                width: 70px;
+                height: 30px;
+            }
+
+            .social-button img {
+                width: 18px;
+                height: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Video làm nền -->
+    <video id="background-video" autoplay loop muted playsinline oncanplay="this.play()" onerror="fallbackToImage()">
+        <source src="well2.mp4" type="video/mp4">
+        Trình duyệt của bạn không hỗ trợ video.
+    </video>
+    <!-- Fallback hình ảnh -->
+    <img id="background-fallback" src="https://i.ibb.co/0YvX4Y5/background.jpg" alt="Fallback Background">
+    <div class="video-overlay"></div>
+
+    <div class="popup">
+        <div class="profile">
+            <img src="ezgg.png" alt="Avatar" class="avatar">
+            <div class="user-info">
+                <h2 class="username">Ân_Grab</h2>
+                <p class="description">tôi thích sục</p>
+                <p class="joined">ez_gg</p>
+            </div>
+        </div>
+        <div class="actions">
+            <button class="mic-button" onclick="toggleMusicDropdown()">🎤</button>
+            <button class="mic-button">📹</button>
+            <button class="mic-button" onclick="toggleChatbox()">💬</button>
+        </div>
+    </div>
+
+    <!-- Social Links -->
+    <div class="social-links">
+        <div class="social-button facebook" onclick="openLink('https://www.facebook.com/bao.an.574532?locale=vi_VN')">
+            <img src="facebook.png" alt="Facebook">
+        </div>
+        <div class="social-button tiktok" onclick="openLink('https://www.tiktok.com/@dlbaoan')">
+            <img src="tiktok.png" alt="TikTok">
+        </div>
+        <div class="social-button instagram" onclick="openLink('https://www.instagram.com/baoan_dz1/')">
+            <img src="instagam.png" alt="Instagram">
+        </div>
+    </div>
+
+    <div class="music-dropdown" id="musicDropdown">
+        <select onchange="selectMusic(this.value)">
+            <option value="">Chọn bài hát</option>
+            <option value="nhac 1.mp3">Nhạc lmao - Song 1</option>
+            <option value="nunca.mp3">Nhạc lmao2 - Song 2</option>
+            <option value="lốp trưởng.mp3">Nhạc lmao3 - Song 3</option>
+        </select>
+    </div>
+
+    <div class="music-player">
+        <div class="song-info">
+            <div class="song-icon">🎵</div>
+            <div class="song-details">
+                <p class="song-title" id="songTitle">Joy</p>
+                <div class="progress-bar" onclick="seek(event)">
+                    <div class="progress" id="progress"></div>
+                    <div class="progress-thumb" id="progressThumb"></div>
+                </div>
+                <p class="song-time" id="songTime">0:00 / 0:00</p>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="control-button" onclick="rewind()">⏪</button>
+            <button class="control-button" id="playPauseBtn" onclick="togglePlayPause()">▶</button>
+            <button class="control-button" onclick="forward()">⏩</button>
+        </div>
+    </div>
+
+    <!-- Chatbox -->
+    <div class="chatbox" id="chatbox">
+        <div class="chatbox-header">
+            <span>Chat</span>
+            <button class="close-btn" onclick="toggleChatbox()">✖</button>
+        </div>
+        <div class="chatbox-messages" id="chatMessages"></div>
+        <div class="chatbox-input">
+            <input type="text" id="chatInput" placeholder="Nhập tin nhắn..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()">Gửi</button>
+        </div>
+    </div>
+
+    <audio id="audioPlayer" style="display: none;"></audio>
+
+    <script>
+        let audioPlayer = document.getElementById('audioPlayer');
+        let playPauseBtn = document.getElementById('playPauseBtn');
+        let songTime = document.getElementById('songTime');
+        let progress = document.getElementById('progress');
+        let progressThumb = document.getElementById('progressThumb');
+        let songTitle = document.getElementById('songTitle');
+        let isPlaying = false;
+        let isDragging = false;
+
+        // Kiểm tra và chuyển sang hình ảnh nếu video lỗi
+        function fallbackToImage() {
+            const video = document.getElementById('background-video');
+            const fallback = document.getElementById('background-fallback');
+            video.style.display = 'none';
+            fallback.style.display = 'block';
+        }
+
+        function toggleMusicDropdown() {
+            const dropdown = document.getElementById('musicDropdown');
+            const button = document.querySelector('.mic-button');
+            const rect = button.getBoundingClientRect();
+            const windowWidth = window.innerWidth;
+
+            if (dropdown.style.display === 'block') {
+                dropdown.style.display = 'none';
+            } else {
+                dropdown.style.display = 'block';
+                dropdown.style.left = Math.min(rect.left, windowWidth - 250 - 10) + 'px';
+                dropdown.style.top = (rect.bottom + 5) + 'px';
+            }
+        }
+
+        function selectMusic(url) {
+            if (url) {
+                if (url.startsWith('http')) {
+                    audioPlayer.src = url;
+                } else {
+                    audioPlayer.src = url;
+                    alert('File local cần host trên server để chạy, bro! Dùng link online thay!');
+                }
+                audioPlayer.play()
+                    .then(() => {
+                        isPlaying = true;
+                        playPauseBtn.innerHTML = '⏸';
+                        songTitle.innerText = url.split('/').pop().replace('.mp3', '');
+                        document.getElementById('musicDropdown').style.display = 'none';
+                    })
+                    .catch(error => {
+                        alert('Lỗi phát nhạc: ' + error + '. Kiểm tra link hoặc host file!');
+                    });
+            }
+        }
+
+        function togglePlayPause() {
+            if (isPlaying) {
+                audioPlayer.pause();
+                isPlaying = false;
+                playPauseBtn.innerHTML = '▶';
+            } else {
+                audioPlayer.play();
+                isPlaying = true;
+                playPauseBtn.innerHTML = '⏸';
+            }
+        }
+
+        function rewind() {
+            audioPlayer.currentTime -= 10;
+        }
+
+        function forward() {
+            audioPlayer.currentTime += 10;
+        }
+
+        function seek(event) {
+            if (!isDragging) {
+                const progressBar = event.target;
+                const rect = progressBar.getBoundingClientRect();
+                const clickX = event.clientX - rect.left;
+                const width = progressBar.offsetWidth;
+                const seekTime = (clickX / width) * audioPlayer.duration;
+                audioPlayer.currentTime = seekTime;
+            }
+        }
+
+        let startX;
+        progressBar.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            progressBar.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const rect = progressBar.getBoundingClientRect();
+                const dx = e.clientX - startX;
+                const width = progressBar.offsetWidth;
+                const currentWidth = parseFloat(progress.style.width) || 0;
+                let newWidth = (currentWidth + (dx / width) * 100);
+                newWidth = Math.max(0, Math.min(100, newWidth));
+                progress.style.width = `${newWidth}%`;
+                const seekTime = (newWidth / 100) * audioPlayer.duration;
+                audioPlayer.currentTime = seekTime;
+                startX = e.clientX;
+                updateThumbPosition();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                progressBar.style.cursor = 'pointer';
+            }
+        });
+
+        function updateThumbPosition() {
+            const width = parseFloat(progress.style.width) || 0;
+            progressThumb.style.left = `calc(${width}% - 5px)`;
+        }
+
+        audioPlayer.addEventListener('timeupdate', () => {
+            let currentTime = audioPlayer.currentTime;
+            let duration = audioPlayer.duration || 0;
+            let progressPercent = (currentTime / duration) * 100;
+            progress.style.width = progressPercent + '%';
+            updateThumbPosition();
+
+            let currentMinutes = Math.floor(currentTime / 60);
+            let currentSeconds = Math.floor(currentTime % 60);
+            let durationMinutes = Math.floor(duration / 60);
+            let durationSeconds = Math.floor(duration % 60);
+
+            currentSeconds = currentSeconds < 10 ? '0' + currentSeconds : currentSeconds;
+            durationSeconds = durationSeconds < 10 ? '0' + durationSeconds : durationSeconds;
+
+            songTime.innerText = `${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`;
+        });
+
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('musicDropdown');
+            const button = document.querySelector('.mic-button');
+            if (!dropdown.contains(event.target) && event.target !== button) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        // Chatbox Functionality
+        function toggleChatbox() {
+            const chatbox = document.getElementById('chatbox');
+            chatbox.style.display = chatbox.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const messageText = input.value.trim();
+            if (messageText) {
+                const messages = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', 'self');
+                messageDiv.textContent = messageText;
+                messages.appendChild(messageDiv);
+                input.value = '';
+
+                messages.scrollTop = messages.scrollHeight;
+
+                setTimeout(() => {
+                    const replyDiv = document.createElement('div');
+                    replyDiv.classList.add('message');
+                    replyDiv.textContent = 'kệ mày!!';
+                    messages.appendChild(replyDiv);
+                    messages.scrollTop = messages.scrollHeight;
+                }, 1000);
+            }
+        }
+
+        // Social Links Functionality
+        function openLink(url) {
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
